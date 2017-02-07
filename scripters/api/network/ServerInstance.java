@@ -21,7 +21,6 @@ public class ServerInstance {
 	protected static String INFO = "[" + ServerInstance.class.getSimpleName() + "]: ";
 	protected HTTP http_version = HTTP.HTTP_1_1;
 	protected boolean isRunning = false;
-	protected boolean debug = false;
 	
 	protected int connection_timeout = 4000;
 	protected int max_timeouts = 1;
@@ -33,9 +32,9 @@ public class ServerInstance {
 	protected ThreadGroup client_group;
 	protected Thread client_init;
 	protected boolean loaded = false;
-	private ServerInstance() { this(8000, 50, false); }
-	private ServerInstance(int port, int max_connections, boolean debug) {
-		this.port = port; this.debug = debug;
+	private ServerInstance() { this(8000, 50); }
+	private ServerInstance(int port, int max_connections) {
+		this.port = port;
 		this.max_connections = max_connections;
 		
 		try {
@@ -72,6 +71,9 @@ public class ServerInstance {
 								public void clientDisconnect(DeviceEvent event) {
 									DEVICES.remove(new Integer(event.getDevice().getID()));
 									for(DeviceListener l : listeners) { if(event.consumed()) break; l.clientDisconnect(event); }
+								}
+								public void clientTimeout(DeviceEvent event) {
+									for(DeviceListener l : listeners) { if(event.consumed()) break; l.clientTimeout(event); }
 								}
 							});
 							Thread t = new Thread(client_group, device, "[Device: " + DEVICES + "]");
@@ -128,7 +130,6 @@ public class ServerInstance {
 		}
 	}
 	
-	public void debugMessages(boolean debug) { this.debug = debug; }
 	public void setPort(int port) {
 		this.port = port < 0 ? 0:(port > 65535 ? 65535:port);
 		restartServer();
@@ -137,9 +138,9 @@ public class ServerInstance {
 		this.max_connections = max;
 		restartServer();
 	}
-	public static ServerInstance createInstance(int port, int max_connections, boolean debug) {
+	public static ServerInstance createInstance(int port, int max_connections) {
 		if(instance == null) {
-			instance = new ServerInstance(port, max_connections, debug);
+			instance = new ServerInstance(port, max_connections);
 			if(!instance.loaded) ServerLog.log(ServerLog.ERROR, "Error loading the Server instance...", null);
 			else ServerLog.log(ServerLog.INFO, "Sucessfully created a Server instance.. note (you can currently only have one server at a time).", null);
 			return instance;
@@ -183,26 +184,24 @@ public class ServerInstance {
 		ContentType type = ContentType.TEXT_PLAIN;
 		if(filePath.lastIndexOf(".") > -1) type = ContentType.FindByExtension(filePath.substring(filePath.lastIndexOf(".")));
 		
-		if(debug) {
-			File f = new File(filePath);
-			if(!f.exists()) {
-				FileNotFoundException e = new FileNotFoundException("The file '" + f  + "' does not exist!");
-				ServerLog.log(ignore_fnf ? ServerLog.WARNING:ServerLog.ERROR, "The file '" + f  + "' does not exist!", e);
-				if(!ignore_fnf) throw e;
-			} else {
-				ServerLog.log(ServerLog.INFO, "Adding '" + websitePath + "' to website! " + type, null);
-				Status s = Status.OK;
-				for(Object o : obj) {
-					if(o instanceof Status) s = (Status)o;
-					if(o instanceof Integer) s = Status.getStatus((Integer)o);
-					if(o instanceof ContentType) type = (ContentType)o;
-				}
-				website_path.put(websitePath, new Resource(f, type, s));
+		File f = new File(filePath);
+		if(!f.exists()) {
+			FileNotFoundException e = new FileNotFoundException("The file '" + f  + "' does not exist!");
+			ServerLog.log(ignore_fnf ? ServerLog.WARNING:ServerLog.ERROR, "The file '" + f  + "' does not exist!", e);
+			if(!ignore_fnf) throw e;
+		} else {
+			ServerLog.log(ServerLog.INFO, "Adding '" + websitePath + "' to website! " + type, null);
+			Status s = Status.OK;
+			for(Object o : obj) {
+				if(o instanceof Status) s = (Status)o;
+				if(o instanceof Integer) s = Status.getStatus((Integer)o);
+				if(o instanceof ContentType) type = (ContentType)o;
 			}
+			website_path.put(websitePath, new Resource(f, type, s));
 		}
 	}
 	
-	public synchronized void requestSite(Header header, Device device) {
+	protected synchronized void requestSite(Header header, Device device) {
 		if(header == null) return;
 		String path = header.resource;
 		if(website_path.containsKey(path)) {

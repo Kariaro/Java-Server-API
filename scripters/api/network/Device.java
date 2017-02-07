@@ -96,7 +96,7 @@ public class Device implements Runnable {
 						timeouts++;
 						Header header = null;
 						if(data != null) header = Header.read(data.getBytes());
-						fireEvent(0, DeviceEvent.create(this, header));
+						fireEvent(2, DeviceEvent.create(this, header));
 						if(timeouts >= max_timeouts) {
 							disconnect();
 							fireEvent(1, DeviceEvent.create(this, header));
@@ -128,6 +128,7 @@ public class Device implements Runnable {
 			if(event.consumed()) break;
 			if(i == 0) l.clientConnection(event);
 			if(i == 1) l.clientDisconnect(event);
+			if(i == 2) l.clientTimeout(event);
 		}
 	}
 	

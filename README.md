@@ -67,7 +67,7 @@ setMaxTimeouts(int max);
 // How long it takes in milliseconds before the device adds one to the timeout counter.
 setConnectionTimeout(int millis);
 
-// Sets if the server should allow not existing files to be added by addPage();
+// Sets if the server should allow none existing files to be added by addPage();
 setIgnoreFileNotFound(boolean b);</code></pre>
 
 That was a quick tutorial about how to use this ServerAPI.

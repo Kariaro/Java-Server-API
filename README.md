@@ -44,7 +44,7 @@ H.setConnection(Connection.KEEP_ALIVE);
 // If you want to set some other not specified methods use.
 H.set("Cache-Control", "private, no-store, no-cache, max-age=0");</code></pre>
 
-Her is a explenation of most methods inside ServerInstance.
+Her is a explanation of most methods inside ServerInstance.
 <pre><code>// Starts the server.
 startServer();
 
